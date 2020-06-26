@@ -121,3 +121,5 @@ That means you have the right to study, change, and distribute the software and 
 This project was inspired by how much imgur sucks!
 
 Thanks to all the devs behind Flask, Pillow and Python.
+
+Thanks Andrew and Jason for the Javascript.
