@@ -33,6 +33,8 @@ USAGE
 
 {2}
 
+    or paste the image into this page.
+
 DESCRIPTION
     I got sick of imgur not working on mobile, so I built this
     Images are resized to a max dimension of {3} px
@@ -59,6 +61,26 @@ SEE ALSO
     https://url.t0.vc
 </pre>""".format(POST, URL, form, MAX_SIZE)
 
+def paste():
+    return """
+    window.addEventListener('paste', e => {
+      const file = e.clipboardData.items[0].getAsFile();
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.src = url;
+
+      const form = new FormData();
+      form.append('pic', file);
+      fetch('/', {
+          method: 'POST',
+          body: form
+        })
+        .then(r => r.text())
+        .then(u => window.location = u)
+        .catch(e => alert(e.message));
+    });
+"""
+
 
 def new_id():
     return ''.join(random.choice(string.ascii_uppercase) for _ in range(4))
@@ -67,7 +89,7 @@ flask_app = Flask(__name__)
 
 @flask_app.route('/', methods=['GET'])
 def index():
-    return '<html><body>{}</body></html>'.format(help())
+    return '<html><script>{}</script><body>{}</body></html>'.format(paste(), help())
 
 @flask_app.route('/', methods=['POST'])
 def new():
@@ -93,7 +115,7 @@ def new():
 
         print('Adding pic {}'.format(nid))
 
-        url = '{}/{}'.format(URL, filename)
+        url = URL + '/' + nid
         if 'web' in request.form:
             return redirect(url)
         else:
