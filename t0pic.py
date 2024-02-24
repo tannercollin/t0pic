@@ -18,10 +18,10 @@ MAX_ALLOWED_SIZE = 16 * 1024 * 1024  # 16 MB
 
 def help():
     form = (
-        '<form action="{0}" method="POST" accept-charset="UTF-8" enctype="multipart/form-data">'
+        f'<form action="{URL}" method="POST" accept-charset="UTF-8" enctype="multipart/form-data">'
         '<input name="web" type="hidden" value="true">'
-        '<input name="pic" type="file" accept="image/*" />'
-        '<br><br><button type="submit">Submit</button></form>'.format(URL, POST)
+        f'<input name="{POST}" type="file" accept="image/*" />'
+        '<br><br><button type="submit">Submit</button></form>'
     )
     return f"""
 <pre>
@@ -64,23 +64,23 @@ SEE ALSO
 </pre>"""
 
 def paste():
-    return """
-    window.addEventListener('paste', e => {
+    return f"""
+    window.addEventListener('paste', e => {{
       const file = e.clipboardData.items[0].getAsFile();
       const url = URL.createObjectURL(file);
       const image = new Image();
       image.src = url;
 
       const form = new FormData();
-      form.append('pic', file);
-      fetch('/', {
+      form.append('{POST}', file);
+      fetch('/', {{
           method: 'POST',
           body: form
-        })
+        }})
         .then(r => r.text())
         .then(u => window.location = u)
         .catch(e => alert(e.message));
-    });
+    }});
 """
 
 def new_id():
