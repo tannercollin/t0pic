@@ -122,4 +122,4 @@ This project was inspired by how much imgur sucks!
 
 Thanks to all the devs behind Flask, Pillow and Python.
 
-Thanks Andrew and Jason for the Javascript.
+Thanks Andrew and Jason for the Javascript, and geeknik for improvements.
