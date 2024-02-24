@@ -9,18 +9,18 @@ from pathlib import Path
 from PIL import Image
 
 app = Flask(__name__)
-PICS = Path('data')
+DATA_FOLDER = Path('data')
 MAX_SIZE = 1920
 PORT = 5003
 URL = 'https://pic.t0.vc'
-POST = 'pic'
-MAX_ALLOWED_SIZE = 16 * 1024 * 1024  # 16 MB
+POST_PARAM = 'pic'
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16 MB
 
 def help():
     form = (
         f'<form action="{URL}" method="POST" accept-charset="UTF-8" enctype="multipart/form-data">'
         '<input name="web" type="hidden" value="true">'
-        f'<input name="{POST}" type="file" accept="image/*" />'
+        f'<input name="{POST_PARAM}" type="file" accept="image/*" />'
         '<br><br><button type="submit">Submit</button></form>'
     )
     return f"""
@@ -30,7 +30,7 @@ NAME
     t0pic: command line image host.
 
 USAGE
-    &lt;image output&gt; | curl -F '{POST}=@/dev/stdin' {URL}
+    &lt;image output&gt; | curl -F '{POST_PARAM}=@/dev/stdin' {URL}
     or upload from the web:
 
 {form}
@@ -43,15 +43,15 @@ DESCRIPTION
     Don't use this for anything serious
 
 EXAMPLES
-    ~$ cat kitten.jpg | curl -F '{POST}=@/dev/stdin' {URL}
+    ~$ cat kitten.jpg | curl -F '{POST_PARAM}=@/dev/stdin' {URL}
        {URL}/YXKV.jpg
     ~$ firefox {URL}/YXKV.jpg
 
     Add this to your .bashrc:
 
-    alias {POST}="curl -F '{POST}=@/dev/stdin' {URL}"
+    alias {POST_PARAM}="curl -F '{POST_PARAM}=@/dev/stdin' {URL}"
 
-    Now you can pipe directly into {POST}!
+    Now you can pipe directly into {POST_PARAM}!
 
 SOURCE CODE
     https://txt.t0.vc/CQQE
@@ -72,7 +72,7 @@ def paste():
       image.src = url;
 
       const form = new FormData();
-      form.append('{POST}', file);
+      form.append('{POST_PARAM}', file);
       fetch('/', {{
           method: 'POST',
           body: form
@@ -94,25 +94,25 @@ def index():
 def new():
     try:
         if 'pic' not in request.files or request.files['pic'].filename == '':
-            print("No file part")
-            abort(400)  # No file was uploaded
+            print('No file part')
+            abort(400)
 
         pic = request.files['pic']
 
         if pic.mimetype not in ['image/png', 'image/jpeg', 'image/gif', 'application/octet-stream']:
-            print(f"Unsupported image format: {pic.mimetype}")
-            abort(400)  # Consider using a more specific status code or returning an error message
+            print(f'Unsupported image format: {pic.mimetype}')
+            abort(400)
 
-        if pic.seek(0, 2) > MAX_ALLOWED_SIZE:  # Move to end to get file size
-            print(f"File size exceeds maximum allowed limit: {pic.tell()} bytes")
-            abort(413)  # Payload Too Large
+        if pic.seek(0, 2) > MAX_FILE_SIZE:  # Move to end to get file size
+            print(f'File size exceeds maximum allowed limit: {pic.tell()} bytes')
+            abort(413)
         pic.seek(0)  # Reset file pointer
 
         nid = new_id()
-        while nid in [p.stem for p in PICS.iterdir()]:
+        while nid in [p.stem for p in DATA_FOLDER.iterdir()]:
             nid = new_id()
 
-        pic = Image.open(pic.stream)  # Use .stream to read directly from Flask file storage
+        pic = Image.open(pic.stream)
 
         if pic.format == 'PNG':
             ext = '.png'
@@ -121,12 +121,12 @@ def new():
         elif pic.format == 'GIF':
             ext = '.gif'
         else:
-            print(f"Unsupported image format: {pic.format}")
+            print(f'Unsupported image format: {pic.format}')
             abort(400)
 
         filename = nid + ext
         pic.thumbnail([MAX_SIZE, MAX_SIZE], Image.Resampling.LANCZOS)
-        pic.save(PICS / filename)  # Use pathlib's / operator for path concatenation
+        pic.save(DATA_FOLDER / filename)
 
         print(f'Adding pic {nid}{ext}')
 
@@ -136,10 +136,10 @@ def new():
         else:
             return f'{url}\n'
     except Exception as e:
-        print(f"Error processing image upload: {e}")
+        print(f'Error processing image upload: {e}')
         abort(400)
 
 if __name__ == '__main__':
-    if not PICS.exists():
-        PICS.mkdir(parents=True)
-    app.run(port=PORT, debug=False)  # Turn off debug for production
+    if not DATA_FOLDER.exists():
+        DATA_FOLDER.mkdir(parents=True)
+    app.run(port=PORT, debug=False)
