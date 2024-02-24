@@ -13,15 +13,15 @@ MAX_SIZE = 1920
 PORT = 5003
 URL = 'https://pic.t0.vc'
 POST = 'pic'
-
+MAX_ALLOWED_SIZE = 16 * 1024 * 1024  # 16 MB
 def help():
     form = (
         '<form action="{0}" method="POST" accept-charset="UTF-8" enctype="multipart/form-data">'
-	'<input name="web" type="hidden" value="true">'
+        '<input name="web" type="hidden" value="true">'
         '<input name="pic" type="file" accept="image/*" />'
         '<br><br><button type="submit">Submit</button></form>'.format(URL, POST)
     )
-    return """
+    return f"""
 <pre>
                         pic.t0.vc
 NAME
@@ -59,7 +59,7 @@ SOURCE CODE
 SEE ALSO
     https://txt.t0.vc
     https://url.t0.vc
-</pre>""".format(POST, URL, form, MAX_SIZE)
+</pre>"""
 
 def paste():
     return """
@@ -81,46 +81,62 @@ def paste():
     });
 """
 
-
 def new_id():
     return ''.join(random.choice(string.ascii_uppercase) for _ in range(4))
 
-flask_app = Flask(__name__)
-
-@flask_app.route('/', methods=['GET'])
+@app.route('/', methods=['GET'])
 def index():
-    return '<html><script>{}</script><body>{}</body></html>'.format(paste(), help())
+    return f'<html><script>{paste()}</script><body>{help()}</body></html>'
 
-@flask_app.route('/', methods=['POST'])
+@app.route('/', methods=['POST'])
 def new():
     try:
+        if 'pic' not in request.files or request.files['pic'].filename == '':
+            print("No file part")
+            abort(400)  # No file was uploaded
+
+        pic = request.files['pic']
+        if pic.mimetype not in ['image/png', 'image/jpeg', 'image/gif']:
+            print(f"Unsupported image format: {pic.mimetype}")
+            abort(400)  # Consider using a more specific status code or returning an error message
+
+        if pic.seek(0, 2) > MAX_ALLOWED_SIZE:  # Move to end to get file size
+            print(f"File size exceeds maximum allowed limit: {pic.tell()} bytes")
+            abort(413)  # Payload Too Large
+        pic.seek(0)  # Reset file pointer
+
         nid = new_id()
         while nid in [p.stem for p in PICS.iterdir()]:
             nid = new_id()
 
-        pic = request.files['pic']
-        if not pic: raise
-        pic = Image.open(pic)
+        pic = Image.open(pic.stream)  # Use .stream to read directly from Flask file storage
 
         if pic.format == 'PNG':
             ext = '.png'
         elif pic.format == 'JPEG':
             ext = '.jpg'
+        elif pic.format == 'GIF':
+            ext = '.gif'
         else:
-            raise
+            print(f"Unsupported image format: {pic.format}")
+            abort(400)
 
         filename = nid + ext
-        pic.thumbnail([MAX_SIZE, MAX_SIZE], Image.ANTIALIAS)
-        pic.save(str(PICS.joinpath(filename)))
+        pic.thumbnail([MAX_SIZE, MAX_SIZE], Image.Resampling.LANCZOS)
+        pic.save(PICS / filename)  # Use pathlib's / operator for path concatenation
 
-        print('Adding pic {}'.format(nid))
+        print(f'Adding pic {nid}{ext}')
 
-        url = URL + '/' + nid
+        url = f'{URL}/{nid}{ext}'
         if 'web' in request.form:
             return redirect(url)
         else:
-            return url + '\n'
-    except:
+            return f'{url}\n'
+    except Exception as e:
+        print(f"Error processing image upload: {e}")
         abort(400)
 
-flask_app.run(port=PORT)
+if __name__ == '__main__':
+    if not PICS.exists():
+        PICS.mkdir(parents=True)
+    app.run(port=PORT, debug=False)  # Turn off debug for production
