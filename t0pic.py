@@ -8,12 +8,14 @@ from flask import abort, Flask, request, redirect
 from pathlib import Path
 from PIL import Image
 
+app = Flask(__name__)
 PICS = Path('data')
 MAX_SIZE = 1920
 PORT = 5003
 URL = 'https://pic.t0.vc'
 POST = 'pic'
 MAX_ALLOWED_SIZE = 16 * 1024 * 1024  # 16 MB
+
 def help():
     form = (
         '<form action="{0}" method="POST" accept-charset="UTF-8" enctype="multipart/form-data">'
@@ -28,28 +30,28 @@ NAME
     t0pic: command line image host.
 
 USAGE
-    &lt;image output&gt; | curl -F '{0}=@/dev/stdin' {1}
+    &lt;image output&gt; | curl -F '{POST}=@/dev/stdin' {URL}
     or upload from the web:
 
-{2}
+{form}
 
     or paste the image into this page.
 
 DESCRIPTION
     I got sick of imgur not working on mobile, so I built this
-    Images are resized to a max dimension of {3} px
+    Images are resized to a max dimension of {MAX_SIZE} px
     Don't use this for anything serious
 
 EXAMPLES
-    ~$ cat kitten.jpg | curl -F '{0}=@/dev/stdin' {1}
-       {1}/YXKV.jpg
-    ~$ firefox {1}/YXKV.jpg
+    ~$ cat kitten.jpg | curl -F '{POST}=@/dev/stdin' {URL}
+       {URL}/YXKV.jpg
+    ~$ firefox {URL}/YXKV.jpg
 
     Add this to your .bashrc:
 
-    alias {0}="curl -F '{0}=@/dev/stdin' {1}"
+    alias {POST}="curl -F '{POST}=@/dev/stdin' {URL}"
 
-    Now you can pipe directly into {0}!
+    Now you can pipe directly into {POST}!
 
 SOURCE CODE
     https://txt.t0.vc/CQQE
