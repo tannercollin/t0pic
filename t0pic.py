@@ -98,7 +98,8 @@ def new():
             abort(400)  # No file was uploaded
 
         pic = request.files['pic']
-        if pic.mimetype not in ['image/png', 'image/jpeg', 'image/gif']:
+
+        if pic.mimetype not in ['image/png', 'image/jpeg', 'image/gif', 'application/octet-stream']:
             print(f"Unsupported image format: {pic.mimetype}")
             abort(400)  # Consider using a more specific status code or returning an error message
 
