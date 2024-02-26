@@ -24,6 +24,8 @@ def help():
         '<br><br><button type="submit">Submit</button></form>'
     )
     return f"""
+<meta name="color-scheme" content="light dark" />
+<meta name="viewport" content="width=1%" />
 <pre>
                         pic.t0.vc
 NAME
