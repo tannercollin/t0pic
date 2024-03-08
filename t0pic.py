@@ -96,26 +96,20 @@ def index():
 def new():
     try:
         if 'pic' not in request.files or request.files['pic'].filename == '':
-            print('No file part')
-            abort(400)
-
+            print("No file part")
+            abort(400)  # No file was uploaded
         pic = request.files['pic']
-
-        if pic.mimetype not in ['image/png', 'image/jpeg', 'image/gif', 'application/octet-stream']:
-            print(f'Unsupported image format: {pic.mimetype}')
-            abort(400)
-
-        if pic.seek(0, 2) > MAX_FILE_SIZE:  # Move to end to get file size
-            print(f'File size exceeds maximum allowed limit: {pic.tell()} bytes')
-            abort(413)
+        if pic.mimetype not in ['application/octet-stream', 'image/png', 'image/jpeg', 'image/gif']:
+            print(f"Unsupported image format: {pic.mimetype}")
+            abort(400)  # Consider using a more specific status code or returning an error message
+        if pic.seek(0, 2) > MAX_ALLOWED_SIZE:  # Move to end to get file size
+            print(f"File size exceeds maximum allowed limit: {pic.tell()} bytes")
+            abort(413)  # Payload Too Large
         pic.seek(0)  # Reset file pointer
-
         nid = new_id()
-        while nid in [p.stem for p in DATA_FOLDER.iterdir()]:
+        while nid in [p.stem for p in PICS.iterdir()]:
             nid = new_id()
-
-        pic = Image.open(pic.stream)
-
+        pic = Image.open(pic.stream)  # Use .stream to read directly from Flask file storage
         if pic.format == 'PNG':
             ext = '.png'
         elif pic.format == 'JPEG':
@@ -123,22 +117,23 @@ def new():
         elif pic.format == 'GIF':
             ext = '.gif'
         else:
-            print(f'Unsupported image format: {pic.format}')
+            print(f"Unsupported image format: {pic.format}")
             abort(400)
-
         filename = nid + ext
-        pic.thumbnail([MAX_SIZE, MAX_SIZE], Image.Resampling.LANCZOS)
-        pic.save(DATA_FOLDER / filename)
-
+        if pic.format == 'GIF':
+            # Handle GIFs separately to preserve animation
+            pic.save(PICS / filename, save_all=True)
+        else:
+            pic.thumbnail([MAX_SIZE, MAX_SIZE], Image.Resampling.LANCZOS)
+            pic.save(PICS / filename)  # Use pathlib's / operator for path concatenation
         print(f'Adding pic {nid}{ext}')
-
         url = f'{URL}/{nid}{ext}'
         if 'web' in request.form:
             return redirect(url)
         else:
             return f'{url}\n'
     except Exception as e:
-        print(f'Error processing image upload: {e}')
+        print(f"Error processing image upload: {e}")
         abort(400)
 
 if __name__ == '__main__':
